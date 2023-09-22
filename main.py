@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Body
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, Body,Path
+from fastapi.responses import HTMLResponse,JSONResponse
+from pydantic import BaseModel,Field
+from typing import Optional,List
 
 
 app=FastAPI()
@@ -8,12 +9,13 @@ app.title = 'AstartesAPI'
 app.description = 'API de pruebas'
 app.version = '0.1'
 
-class Marine():
-    id:int = None
-    name:str = BaseModel(max_leght=20)
-    rank:str = BaseModel(max_leght=20)
-    chapter:str = BaseModel(max_leght=20)
-    status:str = BaseModel(max_leght=10)
+class Marine(BaseModel):
+    id: Optional[int] = None
+    name:str = Field(max_leght=20)
+    rank:str = Field(max_leght=20)
+    chapter:str = Field(max_leght=20)
+    status:str = Field(max_leght=10)
+
 
 marines = [
     {
@@ -52,19 +54,19 @@ marines = [
 def mensaje():
     return HTMLResponse('<h1>Buenos días</h1>')
 
-@app.get('/marines',tags=['Marines'])
-def getMarines():
-    return marines
+@app.get('/marines',tags=['Marines'],response_model=List[Marine])
+def getMarines() -> List[Marine]:
+    return JSONResponse(content = marines)
 
-@app.get('/marines/{id}',tags=['Marines'])
-def getMarine(id:int):
+@app.get('/marines/{id}',tags=['Marines'],response_model=Marine)
+def getMarine(id:int = Path(ge=1,le=2000)) -> Marine:
     for marine in marines:
         if marine['id']==id:
-            return marine
-    return []
+            return JSONResponse(content = marine)
+    return JSONResponse(content = [])
 
-@app.get('/marines/',tags=['Marines'])
-def getMarinesByStatus(name='',rank='',status='',chapter=''):
+@app.get('/marines/',tags=['Marines'],response_model=List[Marine])
+def getMarinesByStatus(name='',rank='',status='',chapter='') -> List[Marine]:
     res = []
     for marine in marines:
         if name and marine['name']!= name: continue
@@ -72,33 +74,29 @@ def getMarinesByStatus(name='',rank='',status='',chapter=''):
         if chapter and marine['chapter'] != chapter:continue
         if rank and marine['rank'] != rank: continue
         res.append(marine)
-    return res
+    return JSONResponse(content = res)
 
-@app.post('/marine',tags=['marine'])
-def createMarine(marine:Marine):
-    marines.append(
-        {
-            'id':marine.id,
-            'name':marine.name,
-            'rank':marine.rank,
-            'chapter':marine.chapter,
-            'status':marine.status
-        }
-    )
-    return movies
+@app.post('/marine',tags=['marine'],response_model=dict)
+def createMarine(marine:Marine) -> dict:
+    for m in marines:
+        if m['id'] > marine.id: break
+        if m['id'] == marine.id:
+            return JSONResponse(content = {"message":"Error. El registro ya existe"})
+    marines.append(marine)
+    return JSONResponse(content = "Se ha registrado el marine correctamente")
 
-@app.put('/marine',tags=['marine'])
-def actualizaMarine(id,marine:Marine):
-    for marine in marines:
-        if marine['id']==id:
-            marine['name']=marine.name
-            marine['rank']=marine.rank
-            marine['chapter']=marine.chapter
-            marine['status']=marine.status
+@app.put('/marine',tags=['marine'],response_model=dict)
+def actualizaMarine(marine:Marine)-> dict:
+    for m in marines:
+        if m['id']==marine.id:
+            m['name']=marine.name
+            m['rank']=marine.rank
+            m['chapter']=marine.chapter
+            m['status']=marine.status
             break
 
-@app.delete('/marine/{id}',tags=['marine'])
-def deleteMarine(id:int):
+@app.delete('/marine/{id}',tags=['marine'], response_model = dict)
+def deleteMarine(id:int) -> dict:
 
     for marine in marines:
         if marine['id']==id:
