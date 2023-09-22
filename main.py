@@ -56,14 +56,13 @@ def mensaje():
 
 @app.get('/marines',tags=['Marines'],response_model=List[Marine])
 def getMarines() -> List[Marine]:
-    return JSONResponse(content = marines)
+    return JSONResponse(status_code=200,content = marines)
 
 @app.get('/marines/{id}',tags=['Marines'],response_model=Marine)
 def getMarine(id:int = Path(ge=1,le=2000)) -> Marine:
     for marine in marines:
-        if marine['id']==id:
-            return JSONResponse(content = marine)
-    return JSONResponse(content = [])
+        if marine['id']==id: return JSONResponse(status_code=200,content = marine)
+    return JSONResponse(status_code=404,content = [])
 
 @app.get('/marines/',tags=['Marines'],response_model=List[Marine])
 def getMarinesByStatus(name='',rank='',status='',chapter='') -> List[Marine]:
@@ -74,16 +73,15 @@ def getMarinesByStatus(name='',rank='',status='',chapter='') -> List[Marine]:
         if chapter and marine['chapter'] != chapter:continue
         if rank and marine['rank'] != rank: continue
         res.append(marine)
-    return JSONResponse(content = res)
+    return JSONResponse(status_code=200,content = res)
 
 @app.post('/marine',tags=['marine'],response_model=dict)
 def createMarine(marine:Marine) -> dict:
     for m in marines:
-        if m['id'] > marine.id: break
-        if m['id'] == marine.id:
+        if m['id'] > marine.id or m['id'] == marine.id:
             return JSONResponse(content = {"message":"Error. El registro ya existe"})
     marines.append(marine)
-    return JSONResponse(content = "Se ha registrado el marine correctamente")
+    return JSONResponse(status_code=200,content = "Se ha registrado el marine correctamente")
 
 @app.put('/marine',tags=['marine'],response_model=dict)
 def actualizaMarine(marine:Marine)-> dict:
